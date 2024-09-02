@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Random Ethereum Facts</title>
+    <meta
+      name="description"
+      content="Get a random fact about Ethereum."
+    />
+    <meta name="author" content="KP's clog." />
+    <style>
+      body {
+        margin: 15px auto;
+        max-width: 650px;
+        line-height: 1.2;
+        font-family: sans-serif;
+        font-size: 2em;
+        color: #fff;
+        background: #444;
+      }
+    </style>
+  </head>
+  <body onload="main()">
+    <h1>Random Ethereum Facts</h1>
+    <i>ChatGPT generated</i>
+    <p id="output_p"></p>
+    <script>
+      function main() {
+        const facts = [
+          	'Ethereum was proposed by Vitalik Buterin in late 2013.'
+		'The Ethereum mainnet launched on July 30, 2015.'
+		'Ethereum introduced the concept of "smart contracts."'
+		'Ether (ETH) is the native cryptocurrency of the Ethereum network.'
+		'Ethereum's blockchain is decentralized, running on thousands of nodes worldwide.'
+		'The Ethereum network switched from Proof of Work (PoW) to Proof of Stake (PoS) in September 2022.'
+		'The PoS transition was part of Ethereum’s "Merge" upgrade.'
+		'Ethereum allows developers to create decentralized applications (dApps).'
+		'Solidity is Ethereum’s primary programming language for smart contracts.'
+		'Gas fees on Ethereum are paid in Ether.'
+		'Ethereum’s maximum gas limit per block is dynamic.'
+		'The Ethereum Virtual Machine (EVM) is the runtime environment for smart contracts.'
+		'Ethereum's block time averages around 12-14 seconds.'
+		'ERC-20 is the standard for fungible tokens on Ethereum.'
+		'ERC-721 is the standard for non-fungible tokens (NFTs) on Ethereum.'
+		'Ethereum's supply is uncapped, unlike Bitcoin's 21 million limit.'
+		'Ethereum 2.0 is the name given to Ethereum’s transition to a PoS consensus model.'
+		'Ethereum enables decentralized finance (DeFi) protocols like Uniswap and Aave.'
+		'The DAO, an Ethereum-based decentralized organization, was hacked in 2016.'
+		'The DAO hack led to Ethereum’s split into Ethereum (ETH) and Ethereum Classic (ETC).'
+		'Vitalik Buterin is one of Ethereum's eight co-founders.'
+		'Ethereum was initially funded through a public crowdsale in 2014.'
+		'Over 72 million ETH were pre-mined and distributed to crowdsale participants.'
+		'The Ethereum blockchain can be explored via websites like Etherscan.'
+		'Ethereum smart contracts are immutable once deployed.'
+		'Ethereum enables Initial Coin Offerings (ICOs) through its smart contracts.'
+		'Ethereum's network has undergone multiple hard forks, including Byzantium and Constantinople.'
+		'Ethereum Improvement Proposals (EIPs) guide protocol changes.'
+		'EIP-1559, implemented in 2021, introduced a burn mechanism for transaction fees.'
+		'Ethereum 2.0 is also referred to as "Serenity."'
+		'Sharding is a key feature planned for Ethereum 2.0 to improve scalability.'
+		'Ethereum allows for the creation of Decentralized Autonomous Organizations (DAOs).'
+		'The "World Computer" is a nickname for Ethereum.'
+		'Plasma is a proposed scaling solution for Ethereum.'
+		'Ethereum has inspired numerous blockchain projects and platforms.'
+		'The Ethereum Foundation is a nonprofit organization supporting Ethereum’s development.'
+		'Ethereum’s beacon chain was launched in December 2020 as part of its PoS transition.'
+		'Ethereum smart contracts can be audited by third parties for security.'
+		'Oracles are used in Ethereum smart contracts to bring off-chain data on-chain.'
+		'Ethereum Classic (ETC) maintains the original Ethereum blockchain post-DAO hack.'
+		'ENS (Ethereum Name Service) allows users to register human-readable names on Ethereum.'
+		'Gas price on Ethereum is measured in gwei, a fraction of ETH.'
+		'Ethereum’s DeFi ecosystem locked over $100 billion in total value at its peak.'
+		'Ethereum supports Layer 2 scaling solutions like Optimism and Arbitrum.'
+		'Decentralized Exchanges (DEXs) like Uniswap run on Ethereum.'
+		'Metamask is a popular Ethereum wallet and browser extension.'
+		'Ethereum’s "difficulty bomb" is designed to encourage the shift from PoW to PoS.'
+		'zk-SNARKs, a privacy technology, can be integrated with Ethereum.'
+		'Ethereum is a Turing-complete blockchain, enabling complex computations.'
+		'Many NFTs are minted and traded on the Ethereum blockchain.'
+       		 ]
+        document.querySelector('#output_p').innerHTML =
+          facts[Math.floor(Math.random() * facts.length)]
+      }
+    </script>
+  </body>
+</html>
