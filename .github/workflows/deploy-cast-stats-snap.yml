@@ -1,0 +1,91 @@
+name: Deploy Cast Stats Snap
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_name:
+        description: "Neynar project name (becomes <name>.host.neynar.app)"
+        required: true
+        default: "kp-cast-stats"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      - name: Install dependencies
+        working-directory: cast-stats-snap
+        run: pnpm install
+
+      - name: Type-check
+        working-directory: cast-stats-snap
+        run: pnpm build
+
+      - name: Create archive (exclude server.ts + node_modules)
+        working-directory: cast-stats-snap
+        run: |
+          tar czf /tmp/snap.tar.gz \
+            --exclude='./node_modules' \
+            --exclude='./src/server.ts' \
+            --exclude='./.vercel' \
+            .
+
+      - name: Deploy to host.neynar.app
+        env:
+          PROJECT: ${{ github.event.inputs.project_name }}
+          # Set NEYNAR_HOST_API_KEY secret in repo settings after first deploy
+          # to enable updates without creating a new project each time.
+          HOST_API_KEY: ${{ secrets.NEYNAR_HOST_API_KEY }}
+        run: |
+          EXTRA_FIELDS=""
+          if [ -n "$HOST_API_KEY" ]; then
+            EXTRA_FIELDS="-F apiKey=$HOST_API_KEY"
+          fi
+
+          RESPONSE=$(curl -sS -X POST https://api.host.neynar.app/v1/deploy \
+            -F "files=@/tmp/snap.tar.gz" \
+            -F "projectName=$PROJECT" \
+            -F "framework=hono" \
+            -F "env={\"SNAP_PUBLIC_BASE_URL\":\"https://${PROJECT}.host.neynar.app\"}" \
+            $EXTRA_FIELDS)
+
+          echo "$RESPONSE"
+
+          URL=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('url',''))" 2>/dev/null || true)
+          API_KEY=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('apiKey',''))" 2>/dev/null || true)
+
+          echo ""
+          echo "========================================"
+          echo "  Live URL: https://${PROJECT}.host.neynar.app"
+          if [ -n "$API_KEY" ]; then
+            echo ""
+            echo "  SAVE THIS API KEY (shown only once):"
+            echo "  $API_KEY"
+            echo ""
+            echo "  Add it as a repo secret named NEYNAR_HOST_API_KEY"
+            echo "  so future deploys update the same project."
+          fi
+          echo "========================================"
+
+      - name: Verify snap is live
+        env:
+          PROJECT: ${{ github.event.inputs.project_name }}
+        run: |
+          sleep 5
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -o /dev/null -sS -w "%{http_code}" \
+              -H 'Accept: application/vnd.farcaster.snap+json' \
+              "https://${PROJECT}.host.neynar.app/")
+            echo "Attempt $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "Snap is live!"
+              break
+            fi
+            sleep 5
+          done
