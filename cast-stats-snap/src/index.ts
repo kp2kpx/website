@@ -13,6 +13,7 @@ interface CastStats {
   y1: number;
   total: number;
   truncated: boolean;
+  error?: string;
 }
 
 async function fetchCastStats(fid: number): Promise<CastStats> {
@@ -46,10 +47,13 @@ async function fetchCastStats(fid: number): Promise<CastStats> {
         headers: { "x-api-key": NEYNAR_API_KEY(), "accept": "application/json" },
         signal: AbortSignal.timeout(8000),
       });
-      if (!res.ok) break;
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        return { d1: 0, w1: 0, m1: 0, y1: 0, total: 0, truncated: false, error: `API ${res.status}: ${body.slice(0, 80)}` };
+      }
       data = (await res.json()) as typeof data;
-    } catch {
-      break;
+    } catch (e) {
+      return { d1: 0, w1: 0, m1: 0, y1: 0, total: 0, truncated: false, error: String(e).slice(0, 80) };
     }
 
     const casts = data.casts ?? [];
@@ -132,6 +136,10 @@ const snap: SnapFunction = async (ctx): Promise<SnapHandlerResult> => {
       { label: "All time", value: stats.total },
     ];
 
+    const children = stats.error
+      ? ["heading", "errMsg", "refresh"]
+      : ["heading", "chart", "refresh"];
+
     return {
       version: SPEC_VERSION,
       theme: { accent: "purple" },
@@ -141,11 +149,15 @@ const snap: SnapFunction = async (ctx): Promise<SnapHandlerResult> => {
           page: {
             type: "stack",
             props: {},
-            children: ["heading", "chart", "refresh"],
+            children,
           },
           heading: {
             type: "text",
             props: { content: "Your Cast Stats", weight: "bold" },
+          },
+          errMsg: {
+            type: "text",
+            props: { content: stats.error ?? "", size: "sm" },
           },
           chart: {
             type: "bar_chart",
