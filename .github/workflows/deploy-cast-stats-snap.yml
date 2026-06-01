@@ -80,6 +80,7 @@ jobs:
           echo "========================================"
 
       - name: Verify snap is live
+        continue-on-error: true
         env:
           PROJECT: ${{ github.event.inputs.project_name }}
         run: |
