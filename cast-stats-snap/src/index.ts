@@ -2,11 +2,8 @@ import { Hono } from "hono";
 import { SPEC_VERSION, type SnapFunction, type SnapHandlerResult } from "@farcaster/snap";
 import { registerSnapHandler } from "@farcaster/snap-hono";
 
-// Farcaster timestamps are seconds since Jan 1, 2021 UTC
-const FARCASTER_EPOCH = 1609459200;
-
-// Use NEYNAR_API_DOCS as the default — works for low-traffic snaps.
-// Set NEYNAR_API_KEY in your deployment env for production rate limits.
+// Use NEYNAR_API_DOCS as the default — free demo key for the Neynar REST API.
+// Set NEYNAR_API_KEY in your deployment env for higher rate limits.
 const NEYNAR_API_KEY = () => process.env.NEYNAR_API_KEY ?? "NEYNAR_API_DOCS";
 
 interface CastStats {
@@ -28,25 +25,26 @@ async function fetchCastStats(fid: number): Promise<CastStats> {
   };
 
   const stats: CastStats = { d1: 0, w1: 0, m1: 0, y1: 0, total: 0, truncated: false };
-  let pageToken: string | undefined;
+  let cursor: string | undefined;
   const MAX_PAGES = 30; // max 3,000 casts examined
 
   for (let page = 0; page < MAX_PAGES; page++) {
-    const url = new URL("https://hub-api.neynar.com/v1/castsByFid");
+    // Use the Neynar REST API — works with the NEYNAR_API_DOCS demo key
+    const url = new URL("https://api.neynar.com/v2/farcaster/feed/user/casts");
     url.searchParams.set("fid", String(fid));
-    url.searchParams.set("pageSize", "100");
-    url.searchParams.set("reverse", "true");
-    if (pageToken) url.searchParams.set("pageToken", pageToken);
+    url.searchParams.set("limit", "150");
+    url.searchParams.set("include_replies", "false");
+    if (cursor) url.searchParams.set("cursor", cursor);
 
     let data: {
-      messages?: Array<{ data?: { type?: string; timestamp?: number } }>;
-      nextPageToken?: string;
+      casts?: Array<{ timestamp: string }>;
+      next?: { cursor?: string };
     };
 
     try {
       const res = await fetch(url.toString(), {
-        headers: { "x-api-key": NEYNAR_API_KEY() },
-        signal: AbortSignal.timeout(6000),
+        headers: { "x-api-key": NEYNAR_API_KEY(), "accept": "application/json" },
+        signal: AbortSignal.timeout(8000),
       });
       if (!res.ok) break;
       data = (await res.json()) as typeof data;
@@ -54,12 +52,11 @@ async function fetchCastStats(fid: number): Promise<CastStats> {
       break;
     }
 
-    const messages = data.messages ?? [];
-    if (messages.length === 0) break;
+    const casts = data.casts ?? [];
+    if (casts.length === 0) break;
 
-    for (const msg of messages) {
-      if (msg.data?.type !== "MESSAGE_TYPE_CAST_ADD") continue;
-      const ts = (msg.data.timestamp ?? 0) + FARCASTER_EPOCH;
+    for (const cast of casts) {
+      const ts = Math.floor(new Date(cast.timestamp).getTime() / 1000);
       stats.total++;
       if (ts >= cutoffs.y1) {
         stats.y1++;
@@ -73,17 +70,15 @@ async function fetchCastStats(fid: number): Promise<CastStats> {
       }
     }
 
-    if (!data.nextPageToken) break;
+    const nextCursor = data.next?.cursor;
+    if (!nextCursor) break;
 
-    // Oldest message on this page
-    const oldest = messages[messages.length - 1];
-    const oldestTs = (oldest?.data?.timestamp ?? 0) + FARCASTER_EPOCH;
-
-    // Once we're past the 1-year window, no point fetching more
+    // Check oldest cast on this page — if before 1 year, stop paginating
+    const oldest = casts[casts.length - 1];
+    const oldestTs = Math.floor(new Date(oldest.timestamp).getTime() / 1000);
     if (oldestTs < cutoffs.y1) break;
 
-    pageToken = data.nextPageToken;
-
+    cursor = nextCursor;
     if (page === MAX_PAGES - 1) stats.truncated = true;
   }
 
