@@ -42,22 +42,29 @@ async function fetchCastStats(fid: number): Promise<CastStats> {
       next?: { cursor?: string };
     };
 
+    let rawBody = "";
     try {
       const res = await fetch(url.toString(), {
         headers: { "x-api-key": NEYNAR_API_KEY(), "accept": "application/json" },
         signal: AbortSignal.timeout(8000),
       });
+      rawBody = await res.text();
       if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        return { d1: 0, w1: 0, m1: 0, y1: 0, total: 0, truncated: false, error: `API ${res.status}: ${body.slice(0, 80)}` };
+        return { d1: 0, w1: 0, m1: 0, y1: 0, total: 0, truncated: false, error: `HTTP ${res.status}: ${rawBody.slice(0, 100)}` };
       }
-      data = (await res.json()) as typeof data;
+      data = JSON.parse(rawBody) as typeof data;
     } catch (e) {
-      return { d1: 0, w1: 0, m1: 0, y1: 0, total: 0, truncated: false, error: String(e).slice(0, 80) };
+      return { d1: 0, w1: 0, m1: 0, y1: 0, total: 0, truncated: false, error: `${String(e).slice(0, 60)} | body: ${rawBody.slice(0, 60)}` };
     }
 
     const casts = data.casts ?? [];
-    if (casts.length === 0) break;
+    if (casts.length === 0) {
+      // Surface the raw response so we can see what the API actually returned
+      if (page === 0 && !data.casts) {
+        return { d1: 0, w1: 0, m1: 0, y1: 0, total: 0, truncated: false, error: `Empty response: ${rawBody.slice(0, 100)}` };
+      }
+      break;
+    }
 
     for (const cast of casts) {
       const ts = Math.floor(new Date(cast.timestamp).getTime() / 1000);
@@ -153,7 +160,7 @@ const snap: SnapFunction = async (ctx): Promise<SnapHandlerResult> => {
           },
           heading: {
             type: "text",
-            props: { content: "Your Cast Stats", weight: "bold" },
+            props: { content: `Cast Stats (fid:${fid})`, weight: "bold" },
           },
           errMsg: {
             type: "text",
