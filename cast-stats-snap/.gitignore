@@ -1,0 +1,4 @@
+.vercel
+*.tsbuildinfo
+dist
+node_modules
