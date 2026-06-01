@@ -19,9 +19,15 @@ jobs:
           version: 9.15.4
           run_install: false
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: cast-stats-snap/pnpm-lock.yaml
+
       - name: Install dependencies
         working-directory: cast-stats-snap
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Type-check
         working-directory: cast-stats-snap
