@@ -45,20 +45,25 @@ jobs:
       - name: Deploy to host.neynar.app
         env:
           PROJECT: ${{ github.event.inputs.project_name }}
-          # Set NEYNAR_HOST_API_KEY secret in repo settings after first deploy
-          # to enable updates without creating a new project each time.
           HOST_API_KEY: ${{ secrets.NEYNAR_HOST_API_KEY }}
+          NEYNAR_API_KEY: ${{ secrets.NEYNAR_API_KEY }}
         run: |
           EXTRA_FIELDS=""
           if [ -n "$HOST_API_KEY" ]; then
             EXTRA_FIELDS="-F apiKey=$HOST_API_KEY"
           fi
 
+          ENV_JSON="{\"SNAP_PUBLIC_BASE_URL\":\"https://${PROJECT}.host.neynar.app\""
+          if [ -n "$NEYNAR_API_KEY" ]; then
+            ENV_JSON="${ENV_JSON},\"NEYNAR_API_KEY\":\"${NEYNAR_API_KEY}\""
+          fi
+          ENV_JSON="${ENV_JSON}}"
+
           RESPONSE=$(curl -sS -X POST https://api.host.neynar.app/v1/deploy \
             -F "files=@/tmp/snap.tar.gz" \
             -F "projectName=$PROJECT" \
             -F "framework=hono" \
-            -F "env={\"SNAP_PUBLIC_BASE_URL\":\"https://${PROJECT}.host.neynar.app\"}" \
+            -F "env=${ENV_JSON}" \
             $EXTRA_FIELDS)
 
           echo "$RESPONSE"
